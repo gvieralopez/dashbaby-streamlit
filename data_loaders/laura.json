@@ -1,0 +1,25 @@
+{
+    "name": "Laura",
+    "data_spreadsheet": {
+        "url": "dwdrA2xJMFx7HHwAMRRwHHgfel18HHJcbANtFn4XbBt6FmsAMBcwQjIKdEBGQCs_TAFbMX0QRR94Syo7KiR9RCo3egsuClIfbQdIEkoFLyNaGXxcegtvHG0HIBVwAXISa05nH2wL",
+        "is_encrypted": true,
+        "sheet": "Laura",
+        "fields": {
+            "Date": "Fecha",
+            "Weight": "Peso",
+            "Cephalic Circumference": "Circunferencia Cefalica",
+            "Length": "Talla",
+            "Event": "Evento"
+        }
+    },
+    "meds_spreadsheet": {
+        "url": "dwdrA2xJMFx7HHwAMRRwHHgfel18HHJcbANtFn4XbBt6FmsAMBcwQjIKdEBGQCs_TAFbMX0QRR94Syo7KiR9RCo3egsuClIfbQdIEkoFLyNaGXxcegtvHG0HIBVwAXISa05nH2wL",
+        "is_encrypted": true,
+        "sheet": "_Meds",
+        "fields": {
+            "Med": "Med",
+            "Concentration": "Concentracion",
+            "Unit": "Unidad"
+        }
+    }
+}
