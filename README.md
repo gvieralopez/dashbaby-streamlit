@@ -1,6 +1,8 @@
 # Dashbaby
 
-A comprehensive dashboard to track important data from your baby.
+A comprehensive dashboard to display and analyse important data from your baby.
+
+This software assumes you
 
 ## 1. Setup
 
@@ -12,8 +14,6 @@ source .env/bin/activate
 ```
 
 ### 1.2 Install the package
-
-#### 1.2.1 For regular users
 
 ```bash
 pip install .
