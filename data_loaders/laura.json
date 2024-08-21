@@ -1,8 +1,8 @@
 {
     "name": "Laura",
     "data_spreadsheet": {
-        "url": "dwdrA2xJMFx7HHwAMRRwHHgfel18HHJcbANtFn4XbBt6FmsAMBcwQjIKdEBGQCs_TAFbMX0QRR94Syo7KiR9RCo3egsuClIfbQdIEkoFLyNaGXxcegtvHG0HIBVwAXISa05nH2wL",
-        "is_encrypted": true,
+        "url": "GDRIVE_DATA_URL",
+        "is_hidden": true,
         "sheet": "Laura",
         "fields": {
             "Date": "Fecha",
@@ -13,8 +13,8 @@
         }
     },
     "meds_spreadsheet": {
-        "url": "dwdrA2xJMFx7HHwAMRRwHHgfel18HHJcbANtFn4XbBt6FmsAMBcwQjIKdEBGQCs_TAFbMX0QRR94Syo7KiR9RCo3egsuClIfbQdIEkoFLyNaGXxcegtvHG0HIBVwAXISa05nH2wL",
-        "is_encrypted": true,
+        "url": "GDRIVE_DATA_URL",
+        "is_hidden": true,
         "sheet": "_Meds",
         "fields": {
             "Med": "Med",

@@ -1,9 +1,10 @@
+import os
 from pathlib import Path
 
 import streamlit as st
 from baby import Baby
-from data_loader import get_encrypted_urls, load_descriptor
-from login import check_url, decrypt_urls
+from data_loader import load_descriptor
+from login import are_hidden_urls, reveal_urls
 from plots import (
     plot_average_daily_increment,
     plot_cc,
@@ -21,33 +22,27 @@ COLOR_PALETTE = [
 
 CONNECTORS_FOLDER = Path("data_loaders")
 BANNER_IMAGE = ".streamlit/banner.png"
+SECRET_PIN = os.environ.get("SECRET_PIN")
+
+
+def display_data_error() -> None:
+    st.error("Data Error: Hidden URLs remain in the descriptors.")
+    st.info("Maybe someone forgot to set env vars?")
+    st.stop()  # This will stop the execution and display only the error screen.
 
 
 # Function to display the login page
-def display_login(encrypted_urls: set[str]):
+def display_login() -> None:
     col1, sep12, col2, sep23, col3 = st.columns([1, 0.1, 1, 0.1, 1])
     with col2:
         st.title("Welcome back.")
         password = st.text_input("Enter your secret pin code:", type="password")
 
         if st.button("Go"):
-            if password:
-                try:
-                    key = int(password)  # Use the password as an integer key
-                    if all(
-                        check_url(encrypted_url, key)
-                        for encrypted_url in encrypted_urls
-                    ):
-                        st.success("Login successful!")
-                        st.session_state.logged_in = True
-                        st.session_state.key = key
-                        st.rerun()  # Rerun to display the dashboard
-                    else:
-                        st.error(AUTH_ERROR_MSG)
-                except ValueError:
-                    st.error(AUTH_ERROR_MSG)
-                except OverflowError:
-                    st.error(AUTH_ERROR_MSG)
+            if password and password == SECRET_PIN:
+                st.success("Login successful!")
+                st.session_state.logged_in = True
+                st.rerun()  # Rerun to display the dashboard
             else:
                 st.error(AUTH_ERROR_MSG)
 
@@ -133,26 +128,22 @@ def display_dashboard(babies: list[Baby]):
 
 
 # Main logic
-babies_descriptors = [
-    load_descriptor(file) for file in CONNECTORS_FOLDER.glob("*.json")
-]
-encrypted_urls = get_encrypted_urls(babies_descriptors)
+babies_descriptors = []
+for file in CONNECTORS_FOLDER.glob("*.json"):
+    descriptor = load_descriptor(file)
+    descriptor = reveal_urls(descriptor)
+    babies_descriptors.append(descriptor)
 
 st.set_page_config(layout="wide")
 
-if "logged_in" not in st.session_state.keys():
-    st.session_state.logged_in = False
+if are_hidden_urls(babies_descriptors):
+    display_data_error()
 
-if not any(encrypted_urls):
-    st.session_state.logged_in = True
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
 
 if st.session_state.logged_in:
-    if any(encrypted_urls):
-        babies_descriptors = [
-            decrypt_urls(descriptor, st.session_state.key)
-            for descriptor in babies_descriptors
-        ]
     babies = [Baby.from_dict(descriptor) for descriptor in babies_descriptors]
     display_dashboard(babies)
 else:
-    display_login(encrypted_urls)
+    display_login()

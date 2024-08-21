@@ -22,7 +22,11 @@ def load_descriptor(descriptor_file: Path) -> dict:
 def load_spreadsheet(
     url: str, sheet_name: str, field_aliases: dict[str, str]
 ) -> pd.DataFrame:
-    df = pd.read_excel(url, sheet_name)
+    try:
+        df = pd.read_excel(url, sheet_name)
+    except Exception as e:
+        print(url)
+        print(e)
     df.rename(
         columns={v: k for k, v in field_aliases.items()},
         inplace=True,
@@ -42,12 +46,3 @@ def load_meds(url: str, sheet_name: str, field_aliases: dict[str, str]) -> pd.Da
     if dataframe_has_all_columns(df, MEDS_COLUMNS):
         return df
     raise ValueError(f"Invalid dataframe columns {df.columns}, expected {MEDS_COLUMNS}")
-
-
-def get_encrypted_urls(babies_descriptors: list[dict]):
-    encrypted_urls = set()
-    for descriptor in babies_descriptors:
-        for spreadsheet_type in ["data_spreadsheet", "meds_spreadsheet"]:
-            if descriptor.get(spreadsheet_type, {}).get("is_encrypted", False):
-                encrypted_urls.add(descriptor[spreadsheet_type]["url"])
-    return encrypted_urls
