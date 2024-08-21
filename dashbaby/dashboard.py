@@ -80,6 +80,7 @@ def display_dashboard(babies: list[Baby]):
             # Plot weights for selected baby
             st.subheader("Weight")
             plot_weights(babies, COLOR_PALETTE)
+            plot_weights(babies, COLOR_PALETTE, corrected=True)
 
         with sep12:
             st.write("")
@@ -88,6 +89,7 @@ def display_dashboard(babies: list[Baby]):
             # Plot weights for selected baby
             st.subheader("Length")
             plot_lengths(babies, COLOR_PALETTE)
+            plot_lengths(babies, COLOR_PALETTE, corrected=True)
 
         with sep23:
             st.write("")
@@ -96,6 +98,7 @@ def display_dashboard(babies: list[Baby]):
             # Plot weights for selected baby
             st.subheader("Cephalic Circumference")
             plot_cc(babies, COLOR_PALETTE)
+            plot_cc(babies, COLOR_PALETTE, corrected=True)
 
     with tab3:
         st.image(BANNER_IMAGE, use_column_width=True)

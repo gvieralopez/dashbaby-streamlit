@@ -71,6 +71,7 @@ class Baby:
         )
         self.meds = meds
         self.data = data
+        self.prematurity_days = 40 
 
     def calculate_age(self, data: pd.DataFrame) -> int:
         oldest_date = data["Date"].min().date()

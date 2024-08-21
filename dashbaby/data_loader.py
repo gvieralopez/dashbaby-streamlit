@@ -46,3 +46,48 @@ def load_meds(url: str, sheet_name: str, field_aliases: dict[str, str]) -> pd.Da
     if dataframe_has_all_columns(df, MEDS_COLUMNS):
         return df
     raise ValueError(f"Invalid dataframe columns {df.columns}, expected {MEDS_COLUMNS}")
+
+
+def load_weight_percentils(
+    url: str = "dashbaby/data/wtageinf.csv", gender: int = 2
+) -> pd.DataFrame:
+    percentiles_df = pd.read_csv(url)
+
+    # Filter the DataFrame by gender
+    percentiles_df = percentiles_df[percentiles_df["Sex"] == gender]
+
+    # Convert 'Agemos' (months) to 'Days'
+    percentiles_df["Days"] = percentiles_df["Agemos"] * 30.4375
+
+    # Convert weights from kg to g by multiplying relevant columns by 1000
+    weight_columns = ["P3", "P5", "P10", "P25", "P50", "P75", "P90", "P95", "P97"]
+    percentiles_df[weight_columns] = percentiles_df[weight_columns] * 1000
+
+    return percentiles_df
+
+
+def load_length_percentils(
+    url: str = "dashbaby/data/lenageinf.csv", gender: int = 2
+) -> pd.DataFrame:
+    percentiles_df = pd.read_csv(url)
+
+    # Filter the DataFrame by gender
+    percentiles_df = percentiles_df[percentiles_df["Sex"] == gender]
+
+    # Convert 'Agemos' (months) to 'Days'
+    percentiles_df["Days"] = percentiles_df["Agemos"] * 30.4375
+
+    return percentiles_df
+
+def load_cc_percentils(
+    url: str = "dashbaby/data/hcageinf.csv", gender: int = 2
+) -> pd.DataFrame:
+    percentiles_df = pd.read_csv(url)
+
+    # Filter the DataFrame by gender
+    percentiles_df = percentiles_df[percentiles_df["Sex"] == gender]
+
+    # Convert 'Agemos' (months) to 'Days'
+    percentiles_df["Days"] = percentiles_df["Agemos"] * 30.4375
+
+    return percentiles_df

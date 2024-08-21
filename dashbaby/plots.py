@@ -5,7 +5,16 @@ import pandas as pd
 import streamlit as st
 from baby import Baby, Variable
 from meds import get_baby_intake_df
+from data_loader import (
+    load_weight_percentils,
+    load_length_percentils,
+    load_cc_percentils,
+)
 
+
+weight_percentils = load_weight_percentils()
+length_percentils = load_length_percentils()
+cc_percentils = load_cc_percentils()
 
 def plot_metrics(baby: Baby):
     m1, m2, m3, m4 = st.columns(4)
@@ -39,49 +48,134 @@ def plot_summary(baby: Baby):
 
 
 def plot_trend(
-    babies: list[Baby],
-    variable_selector: Callable[[Baby], Variable],
+    babies: list,  # Assuming babies is a list of Baby objects or similar
+    variable_selector: Callable[
+        [Baby], Variable
+    ],  # Adjust to select the correct variable
     colors: list[str],
+    percentils: pd.DataFrame | None = None,
+    corrected: bool = False,
 ):
-    if not len(babies):
+    if not babies:
         return
 
-    # Merge the dataframes of the selected variable
-    var_name, units = "", ""
+    # Initialize empty dataframe for merging
     merged_df = pd.DataFrame()
+
+    # Process each baby's data
     for baby in babies:
         variable = variable_selector(baby)
-        if not var_name:
-            var_name, units = variable.name, variable.units
         df = variable.history.rename(columns={"Value": baby.name})
+
+        # Convert 'Date' to elapsed days
+        df["Date"] = (df["Date"] - df["Date"].min()).dt.days
+
+        # Adjust for prematurity if corrected is True
+        if corrected:
+            df["Date"] = df["Date"] - baby.prematurity_days
+            # Filter out rows where Date is less than or equal to 0
+            df = df[df["Date"] > 0]
+
+        # Merge dataframes
         merged_df = (
             pd.merge(merged_df, df, on="Date", how="outer")
             if not merged_df.empty
             else df
         )
+
+    # Fill missing values
     merged_df = merged_df.ffill().bfill()
 
-    # Convert dates to elapsed days
-    merged_df["Date"] = (merged_df["Date"] - merged_df["Date"].min()).dt.days
-
     # Prepare the data in a long format for Altair
-    merged_df = merged_df.melt(id_vars=["Date"], var_name="Baby", value_name=var_name)
+    merged_df = merged_df.melt(
+        id_vars=["Date"], var_name="Baby", value_name=variable.name
+    )
 
-    # Create the line chart using Altair
-    chart = (
+    # Determine the maximum number of days from the babies' data
+    max_days = merged_df["Date"].max()
+    min_days = merged_df["Date"].min()
+
+    # Create the baby's data line chart
+    baby_chart = (
         alt.Chart(merged_df)
         .mark_line()
         .encode(
-            x=alt.X("Date", title="Living time [Days]"),
-            y=alt.Y(var_name, title=f"{var_name} [{units}]"),
+            x=alt.X(
+                "Date",
+                title=f"{'Corrected ' if corrected else ''}Living time [Days]",
+            ),
+            y=alt.Y(variable.name, title=f"{variable.name} [{variable.units}]"),
             color=alt.Color(
                 "Baby:N", scale=alt.Scale(range=colors) if colors else alt.Undefined
             ),
         )
-        .properties(width=700, height=400)
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    # Plot percentiles data with shaded regions
+    if percentils is not None:
+        # Filter percentiles data to include only rows up to the maximum number of days
+        filtered_percentils = percentils[percentils["Days"] <= max_days + 16]
+        filtered_percentils = filtered_percentils[
+            filtered_percentils["Days"] >= min_days - 16
+        ]
+
+        # Define percentile ranges for shaded regions
+        percentile_ranges = [
+            ("P3", "P97"),
+            ("P5", "P95"),
+            ("P10", "P90"),
+            ("P25", "P75"),
+            ("P50", "P50"),
+        ]
+
+        # Create shaded areas and lines for percentile ranges
+        percentile_areas = []
+        percentile_lines = []
+        for lower, upper in percentile_ranges:
+            if lower != upper:
+                percentile_area = (
+                    alt.Chart(filtered_percentils)
+                    .mark_area(opacity=0.2)  # Semi-transparent regions for percentiles
+                    .encode(
+                        x=alt.X(
+                            "Days",
+                            title=f"{'Corrected ' if corrected else ''}Living time [Days]",
+                        ),
+                        y=alt.Y(
+                            f"{lower}", title=f"{variable.name} [{variable.units}]"
+                        ),
+                        y2=alt.Y2(f"{upper}"),
+                        color=alt.value(
+                            "gray"
+                        ),  # Uniform color for all percentile areas
+                    )
+                )
+                percentile_areas.append(percentile_area)
+            else:
+                percentile_line = (
+                    alt.Chart(filtered_percentils)
+                    .mark_line(color="gray")  # Gray line for P50
+                    .encode(
+                        x=alt.X(
+                            "Days",
+                            title=f"{'Corrected ' if corrected else ''}Living time [Days]",
+                        ),
+                        y=alt.Y(
+                            f"{lower}", title=f"{variable.name} [{variable.units}]"
+                        ),
+                    )
+                )
+                percentile_lines.append(percentile_line)
+
+        # Combine baby, shaded area, and line charts, ensuring baby's data is on top
+        combined_chart = alt.layer(
+            *percentile_areas, *percentile_lines, baby_chart
+        ).properties(width=700, height=400)
+    else:
+        # If no percentiles are provided, only plot baby's data
+        combined_chart = baby_chart
+
+    st.altair_chart(combined_chart, use_container_width=True)
 
 
 def plot_average_daily_increment(
@@ -89,10 +183,6 @@ def plot_average_daily_increment(
     variable_selector: Callable[[Baby], Variable],
     bar_color: str = "steelblue",
 ):
-    if baby is None:
-        st.write("No baby data available.")
-        return
-
     variable = variable_selector(baby)
     if variable is None or not hasattr(variable, "history"):
         st.write("No valid variable data available.")
@@ -156,13 +246,13 @@ def plot_average_daily_increment(
     st.altair_chart(chart, use_container_width=True)
 
 
-def plot_weights(babies: list[Baby], colors: list[str]):
-    plot_trend(babies, lambda baby: baby.weight, colors)
+def plot_weights(babies: list[Baby], colors: list[str], corrected: bool = False):
+    plot_trend(babies, lambda baby: baby.weight, colors, weight_percentils, corrected)
 
 
-def plot_lengths(babies: list[Baby], colors: list[str]):
-    plot_trend(babies, lambda baby: baby.length, colors)
+def plot_lengths(babies: list[Baby], colors: list[str], corrected: bool = False):
+    plot_trend(babies, lambda baby: baby.length, colors, length_percentils, corrected)
 
 
-def plot_cc(babies: list[Baby], colors: list[str]):
-    plot_trend(babies, lambda baby: baby.cc, colors)
+def plot_cc(babies: list[Baby], colors: list[str], corrected: bool = False):
+    plot_trend(babies, lambda baby: baby.cc, colors, cc_percentils, corrected)
